@@ -17,6 +17,7 @@ import org.junit.Test
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
 
@@ -75,13 +76,13 @@ class CapturedBaselineTest {
         val currentRaw = (frame.currentA * 100).roundToLong()
         val voltageRaw = (frame.voltageV * 100).roundToLong()
         return byteArrayOf(
-            0x01, 0x08, 0x0D, 0xD1,
+            0x01, 0x08, 0x0D, 0xD1.toByte(),
             (currentRaw and 0xFF).toByte(), ((currentRaw shr 8) and 0xFF).toByte(),
             (voltageRaw and 0xFF).toByte(), ((voltageRaw shr 8) and 0xFF).toByte(),
             (frame.b08 * 10).roundToLong().toByte(), 0x04,
             frame.b10.roundToInt().toByte(), 0x01,
             frame.b12.roundToInt().toByte(),
-            0x02, 0x06, 0xC4, 0x09,
+            0x02, 0x06, 0xC4.toByte(), 0x09,
             frame.checksum.toByte(),
         )
     }

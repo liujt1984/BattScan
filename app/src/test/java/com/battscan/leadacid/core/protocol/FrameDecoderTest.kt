@@ -59,9 +59,9 @@ class FrameDecoderTest {
         assertEquals(FrameStatus.TOO_SHORT, decoder.classify(bytesOf(0x01)))
         assertEquals(FrameStatus.DATA, decoder.classify(goldenFrame))
         assertEquals(
+            "a long frame with the right magic must not be silently accepted",
             FrameStatus.UNKNOWN_FRAME,
             decoder.classify(goldenFrame.copyOf(20)),
-            "a long frame with the right magic must not be silently accepted",
         )
     }
 
