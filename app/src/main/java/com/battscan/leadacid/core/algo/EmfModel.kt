@@ -21,7 +21,7 @@ data class EmfFit(
     val sampleCount: Int,
     val currentSpreadA: Double,
 ) {
-    val trustworthy: Boolean get() = sampleCount >= 12 && correlation.abs() >= 0.55 && currentSpreadA >= 1.5
+    val trustworthy: Boolean get() = sampleCount >= 12 && abs(correlation) >= 0.55 && currentSpreadA >= 1.5
 
     /** EMF implied at zero current. */
     val emfV: Double get() = interceptV

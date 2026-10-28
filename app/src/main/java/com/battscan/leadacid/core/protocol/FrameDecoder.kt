@@ -104,7 +104,7 @@ class FrameDecoder(private val spec: ProtocolSpec) {
             }
         }
         if (field.signed) {
-            val bits = 8L * field.length
+            val bits = 8 * field.length
             val signBit = 1L shl (bits - 1)
             if (acc and signBit != 0L) acc -= (1L shl bits)
         }

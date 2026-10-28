@@ -100,7 +100,7 @@ class MonitorForegroundService : LifecycleService() {
         val manager = getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(CHANNEL_ID, getString(R.string.notif_channel_monitor), NotificationManager.IMPORTANCE_LOW)
-        channel.showBadge = true
+        channel.setShowBadge(true)
         manager.createNotificationChannel(channel)
     }
 

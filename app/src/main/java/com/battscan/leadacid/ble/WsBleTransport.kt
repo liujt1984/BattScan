@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.os.SystemClock
 import com.battscan.leadacid.core.protocol.ProtocolSpec
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -27,7 +28,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
-import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -109,8 +109,8 @@ class WsBleTransport(
     private var responseTimeoutMs = DEFAULT_RESPONSE_TIMEOUT_MS
     private var autoReconnect = true
 
-    private var connectResume: Continuation<BluetoothGatt>? = null
-    private var stepResume: Continuation<Unit>? = null
+    private var connectResume: CancellableContinuation<BluetoothGatt>? = null
+    private var stepResume: CancellableContinuation<Unit>? = null
     private var frameSignal: Channel<Unit>? = null
     private var lastRssi = 0
 
@@ -253,15 +253,15 @@ class WsBleTransport(
     }
 
     private suspend fun connect(device: BluetoothDevice): BluetoothGatt =
-        suspendCancellableCoroutine { cont ->
-            connectResume = cont
-            cont.invokeOnCancellation { connectResume = null }
-            val started = device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
-            if (!started) {
-                connectResume = null
-                if (cont.isActive) cont.resumeWithException(LinkException("connectGatt 返回 false"))
+        withTimeoutOrNull(CONNECT_STEP_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                connectResume = cont
+                cont.invokeOnCancellation { if (connectResume === cont) connectResume = null }
+                // compileSdk 35 declares connectGatt as returning no value, so a refused request is
+                // only visible as a callback that never arrives; the timeout above is what bounds it.
+                device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
             }
-        }
+        } ?: throw LinkException("连接超时：%ds 内没有收到回调".format(CONNECT_STEP_TIMEOUT_MS / 1000))
 
     private suspend fun discover(link: BluetoothGatt) = awaitStep(CONNECT_STEP_TIMEOUT_MS, "服务发现") {
         if (!link.discoverServices()) throw LinkException("discoverServices 返回 false")
@@ -319,7 +319,13 @@ class WsBleTransport(
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 val cont = connectResume
                 connectResume = null
-                if (cont != null && cont.isActive) cont.resume(g)
+                if (cont != null && cont.isActive) {
+                    cont.resume(g)
+                    return
+                }
+                // A connect that already timed out can still land later. Nobody is waiting for it,
+                // so release the client instead of leaking a GATT slot until the process dies.
+                runCatching { g.close() }
                 return
             }
             val reason = "链路断开 status=0x%02X".format(status)

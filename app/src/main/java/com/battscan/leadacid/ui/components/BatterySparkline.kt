@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import com.battscan.leadacid.monitor.ChartPoint
 import kotlin.math.max
@@ -94,7 +96,7 @@ private fun DrawScope.drawSeries(
         val y = (bottom - ((value - minValue) / range).toFloat() * (bottom - top)).toFloat()
         if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }
-    drawPath(path, color = color, style = androidx.compose.ui.graphics.Stroke(width = 3f, cap = StrokeCap.Round))
+    drawPath(path, color = color, style = Stroke(width = 3f, cap = StrokeCap.Round))
 }
 
 /** Formats a compact axis label pair for the caller to render beside a sparkline. */

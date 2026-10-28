@@ -39,6 +39,7 @@ import com.battscan.leadacid.data.db.RideSessionEntity
 import com.battscan.leadacid.data.db.SampleEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -393,7 +394,7 @@ class MonitorEngine(
     }
 
     private suspend fun flushLoop() {
-        while (isActive) {
+        while (currentCoroutineContext().isActive) {
             delay(FLUSH_INTERVAL_MS)
             drainBuffers()
         }

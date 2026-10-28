@@ -60,7 +60,7 @@ fun ReplayScreen(vm: MonitorViewModel, sessionId: Long, onBack: () -> Unit) {
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, bottom = 8.dp),
+                .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             val data = detail
