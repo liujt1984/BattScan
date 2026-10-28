@@ -80,16 +80,20 @@ class FrameDecoderTest {
 
     @Test
     fun signedPresetReadsTheHighBitAsRegen() {
+        // Written as the raw integer the wire carries, because doing the two's complement and the
+        // little-endian split by hand is how this test ended up asserting -12.56 A for -10 A.
+        val raw = -1000
         val negative = goldenFrame.copyOf().also {
-            // -10.00 A is raw -1000 = 0xFB E8, stored little-endian as E8 FB
-            it[4] = 0xE8.toByte()
-            it[5] = 0xFB.toByte()
+            it[4] = (raw and 0xFF).toByte()
+            it[5] = ((raw shr 8) and 0xFF).toByte()
         }
 
         assertEquals(-10.0, FrameDecoder(WsBlePresets.WS_BLE_18B_SIGNED).decode(negative).byKey("current")!!.value, 1e-9)
         // The magnitude preset reads the same bytes as 645.36 A - an impossible draw, which is
         // exactly how a wrong sign mode shows up on a real capture.
-        assertEquals(645.36, FrameDecoder(WsBlePresets.WS_BLE_18B).decode(negative).byKey("current")!!.value, 1e-9)
+        val unsigned = ((1 shl 16) + raw) / 100.0
+        assertEquals(unsigned, FrameDecoder(WsBlePresets.WS_BLE_18B).decode(negative).byKey("current")!!.value, 1e-9)
+        assertEquals(645.36, unsigned, 1e-9)
     }
 
     @Test
