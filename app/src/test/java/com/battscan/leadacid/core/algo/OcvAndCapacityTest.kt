@@ -102,7 +102,10 @@ class OcvAndCapacityTest {
         assertEquals(22.8, CapacityModel.effectiveCapacityAh(config, 10.0, 60.0), 1e-9)
         // The factor is clamped at +25 %, so a hot pack cannot claim more than it physically holds.
         assertEquals(25.0, CapacityModel.effectiveCapacityAh(config, 10.0, 100.0), 1e-9)
-        assertEquals(7.0, CapacityModel.effectiveCapacityAh(config, 10.0, -100.0), 1e-9)
+        // -100 C is already past the linear law (0.5 of label) but still above the 0.35 floor.
+        assertEquals(10.0, CapacityModel.effectiveCapacityAh(config, 10.0, -100.0), 1e-9)
+        // The floor is what stops a stuck sensor from driving the usable capacity to zero.
+        assertEquals(7.0, CapacityModel.effectiveCapacityAh(config, 10.0, -200.0), 1e-9)
     }
 
     @Test

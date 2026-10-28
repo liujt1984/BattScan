@@ -1,6 +1,7 @@
 package com.battscan.leadacid.core
 
 import com.battscan.leadacid.core.algo.DirectionInferer
+import com.battscan.leadacid.core.algo.EmfFit
 import com.battscan.leadacid.core.algo.EmfModel
 import com.battscan.leadacid.core.algo.OcvTable
 import com.battscan.leadacid.core.algo.SocEstimator
@@ -145,14 +146,17 @@ class CapturedBaselineTest {
     @Test
     fun voltageRisesWithCurrentWhichIsTheOpenQuestion() {
         // The single most important number in the whole analysis: a discharging 72 V pack cannot
-        // show +1.79 V per amp. Pinning it keeps the mapping question open until a known-工况
+        // show +1.78 V per amp. Pinning it keeps the mapping question open until a known-工况
         // riding capture answers it.
         val model = EmfModel()
         frames.forEach { model.add(it.currentA, it.voltageV, monotonicMs(it)) }
 
         val fit = model.fit()
         assertTrue(fit.trustworthy)
-        assertEquals(1.7933, fit.slopeOhm, 0.005)
+        // The model fits its last 120 frames, not all 150; the whole-capture least squares is
+        // 1.7933, and either number is far above the 0.8 Ω ceiling a real pack resistance can reach.
+        assertEquals(1.7826, fit.slopeOhm, 0.005)
+        assertTrue(fit.slopeOhm > EmfFit.SUSPICIOUS_SLOPE_OHM)
         assertEquals(58.15, fit.interceptV, 0.2)
         assertEquals(0.9377, fit.correlation, 0.005)
         assertTrue(fit.verdict().contains("无符号幅值"))
@@ -296,7 +300,9 @@ class CapturedBaselineTest {
         val rawAhOnWire = frames.zipWithNext().sumOf { (a, b) ->
             b.currentA * (b.timeS - a.timeS).coerceIn(0.0, SocEstimator.MAX_STEP_SEC) / 3600.0
         }
-        assertEquals(rawAhOnWire, state.dischargedAh + state.recoveredAh / config.chargeEfficiency, 1e-9)
+        // Accumulation order differs from this recomputation by a few 1e-8 Ah, so the pin is a
+        // tolerance rather than an exact match; the law it encodes is what matters.
+        assertEquals(rawAhOnWire, state.dischargedAh + state.recoveredAh / config.chargeEfficiency, 1e-6)
 
         // Two minutes at 9 A out of a 20 Ah pack is a few percent of SOC, and the pack started here
         // at 80 %, so a replay that claimed a double-digit drop would mean the sign split leaked.
