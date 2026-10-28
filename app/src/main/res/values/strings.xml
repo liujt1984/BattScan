@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">电池实时监测</string>
+    <string name="notif_channel_monitor">电池监测服务</string>
+    <string name="notif_title_connected">正在监测 · %1$s</string>
+    <string name="notif_title_disconnected">蓝牙已断开，重连中</string>
+    <string name="notif_body">%1$.1f V · %2$.1f A · SOC %3$d%%</string>
+</resources>
