@@ -31,7 +31,7 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
-    testOptions { unitTests.returnDefaultValues = true }
+    testOptions { unitTests.isReturnDefaultValues = true }
 }
 
 dependencies {

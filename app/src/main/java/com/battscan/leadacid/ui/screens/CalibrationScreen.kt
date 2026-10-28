@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.battscan.leadacid.core.algo.EmfFit
+import com.battscan.leadacid.core.algo.EmfModel
 import com.battscan.leadacid.core.protocol.CurrentSignMode
 import com.battscan.leadacid.core.protocol.Endianness
 import com.battscan.leadacid.core.protocol.FieldRole
@@ -71,7 +72,7 @@ private fun FitPanel(fit: EmfFit) {
         StatRow(
             label = "dV/dI（拟合斜率）",
             value = "%+.3f Ω".format(fit.slopeOhm),
-            valueColor = if (fit.slopeOhm < 0.0) RegenColor else CriticalColor,
+            valueColor = if (fit.slopeOhm in EmfModel.LEARNABLE_MIN_OHM..EmfFit.SUSPICIOUS_SLOPE_OHM) RegenColor else CriticalColor,
         )
         StatRow(label = "推算 EMF（截距）", value = "%.2f V".format(fit.interceptV))
         StatRow(label = "相关系数 r", value = "%.3f".format(fit.correlation))
@@ -79,9 +80,12 @@ private fun FitPanel(fit: EmfFit) {
         StatRow(label = "电流跨度", value = "%.2f A".format(fit.currentSpreadA))
         Text(text = fit.verdict(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
         Text(
-            text = "真正的放电电池端电压会随电流增大而下降，所以 dV/dI 必须为负。抓包数据拟合出 +1.79 V/A，" +
-                "这不可能是放电：要么电流字段是无符号幅值（放电与回收混在一起），要么电压与电流的字节配对搞错了。" +
-                "必须用一次实骑采集把它重新证明，SOC 与续航数字才可信。",
+            text = ("本 App 全链路约定“正电流 = 流入电池（充电为正）”，所以端电压随电流增大而升高，" +
+                "健康的映射应当拟合出一个小的正斜率，它就是内阻 +R，合理区间 %.2f~%.2f Ω。负斜率说明电流符号取反了；" +
+                "斜率为正但远大于 %.1f Ω（抓包拟合出 +1.79 Ω）也不是内阻，而是电流字段按无符号幅值上报，" +
+                "把放电与回收混进了同一个数，或电压与电流的字节配对搞错了。" +
+                "必须用一次已知工况的实骑采集把它重新证明，SOC 与续航数字才可信。")
+                .format(EmfModel.LEARNABLE_MIN_OHM, EmfFit.SUSPICIOUS_SLOPE_OHM, EmfFit.SUSPICIOUS_SLOPE_OHM),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
